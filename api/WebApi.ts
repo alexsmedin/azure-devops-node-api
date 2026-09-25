@@ -191,7 +191,7 @@ export class WebApi {
         return new Promise<lim.ConnectionData>(async (resolve, reject) => {
             try {
                 let res: rm.IRestResponse<lim.ConnectionData>;
-                res = await this.rest.get<lim.ConnectionData>(this.vsoClient.resolveUrl('/_apis/connectionData'));
+                res = await this.rest.get<lim.ConnectionData>(this.vsoClient.resolveApiUrl('/_apis/connectionData'));
                 resolve(res.result);
             }
             catch (err) {
