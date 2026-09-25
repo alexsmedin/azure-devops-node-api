@@ -191,7 +191,7 @@ export class WebApi {
         return new Promise<lim.ConnectionData>(async (resolve, reject) => {
             try {
                 let res: rm.IRestResponse<lim.ConnectionData>;
-                res = await this.rest.get<lim.ConnectionData>(this.vsoClient.resolveApiUrl('/_apis/connectionData'));
+                res = await this.rest.get<lim.ConnectionData>(this.vsoClient.resolveUrl('/_apis/connectionData'));
                 resolve(res.result);
             }
             catch (err) {
@@ -270,6 +270,22 @@ export class WebApi {
         optionsClone.allowRetries = true;
         optionsClone.maxRetries = 5;
         serverUrl = await serverUrl || this.serverUrl;
+
+        // For self-hosted Azure DevOps Server with collection-scoped endpoints (e.g., /tfs/Collection),
+        // the location APIs (/_apis/Location, resource areas, etc.) are served at the server level (/tfs),
+        // not the collection level. Normalize the URL for LocationsApi to ensure it can reach these endpoints.
+        try {
+            const serverUrlObj = new URL(serverUrl);
+            const pathSegments = serverUrlObj.pathname.split('/').filter(Boolean);
+            if (pathSegments.length >= 2) {
+                // Collection-scoped endpoint - use parent level for location API calls
+                serverUrlObj.pathname = '/' + pathSegments.slice(0, -1).join('/');
+                serverUrl = serverUrlObj.href.replace(/\/$/, '');  // Remove trailing slash if present
+            }
+        } catch {
+            // If URL parsing fails, use the original URL
+        }
+
         handlers = handlers || [this.authHandler];
         return new locationsm.LocationsApi(serverUrl, handlers, optionsClone, this.userAgent);
     }

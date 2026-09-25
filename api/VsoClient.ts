@@ -160,7 +160,7 @@ export class VsoClient {
     private beginGetAreaLocations(area: string): Promise<VssApiResourceLocationLookup> {
         let areaLocationsPromise = this._locationsByAreaPromises[area];
         if (!areaLocationsPromise) {
-            let requestUrl = this.resolveApiUrl(VsoClient.APIS_RELATIVE_PATH + "/" + area);
+            let requestUrl = this.resolveUrl(VsoClient.APIS_RELATIVE_PATH + "/" + area);
             areaLocationsPromise = this.restClient.options<any>(requestUrl)
                 .then((res: restm.IRestResponse<any>) => {
                     if (!res.result) {
@@ -186,27 +186,6 @@ export class VsoClient {
 
     public resolveUrl(relativeUrl: string): string {
         return url.resolve(this.baseUrl, path.join(this.basePath, relativeUrl));
-    }
-
-    public resolveApiUrl(relativeUrl: string): string {
-        // Resolve URLs for APIs that are served at the server level, not collection level.
-        // For self-hosted servers with collection paths (e.g., /tfs/Collection), this returns
-        // the URL at the parent level (e.g., /tfs/_apis/...).
-        let apiBasePath = this.getApiBasePath();
-        return url.resolve(this.baseUrl, path.join(apiBasePath, relativeUrl));
-    }
-
-    private getApiBasePath(): string {
-        // For self-hosted Azure DevOps Server with collection-scoped endpoints (e.g., /tfs/Collection),
-        // the API location lookups (/_apis/Location, etc.) are served at the server level (/tfs), not
-        // the collection level (/tfs/Collection). This method returns the server-level path for API calls.
-        const pathSegments = this.basePath.split('/').filter(Boolean);
-        if (pathSegments.length >= 2) {
-            // Multi-segment path (e.g., /tfs/Collection) - use parent level for API lookups
-            return '/' + pathSegments.slice(0, -1).join('/');
-        }
-        // Single segment or root - use as-is
-        return this.basePath;
     }
 
     private queryParamsToStringHelper(queryParams: any, prefix: string): string {
